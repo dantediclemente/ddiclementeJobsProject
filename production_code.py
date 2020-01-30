@@ -17,6 +17,7 @@ def get_api_data():
             job_list.append(json.dumps(job, sort_keys=True, indent=4))
     for job in job_list:
         job_file.write(job)
+        print(job)
     return job_list
 
 
