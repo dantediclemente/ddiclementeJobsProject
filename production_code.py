@@ -1,6 +1,7 @@
+import sqlite3
+
 import requests
 import json
-import sqlite3
 from typing import Tuple
 
 
@@ -59,10 +60,9 @@ def create_table(cursor: sqlite3.Cursor):
 
 
 def drop_table_on_new_api_call(cursor: sqlite3.Cursor):
-    result = cursor.execute('DROP TABLE IF EXISTS api_jobs')
+    cursor.execute('DROP TABLE IF EXISTS api_jobs')
 
 
-# noinspection PyBroadException
 def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
     for job in job_list:
         try:
@@ -74,7 +74,7 @@ def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
                             job['description'], job['how_to_apply'],
                             job['location'], job['title'],
                             job['type'], job['url']))
-        except:
+        except KeyError:
             print("Failed to insert data into sqlite table")
             return "failed"
 
