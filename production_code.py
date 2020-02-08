@@ -2,7 +2,6 @@ import sqlite3
 import requests
 import json
 from typing import Tuple
-import sys
 
 
 def get_api_data():
