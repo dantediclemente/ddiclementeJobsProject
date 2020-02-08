@@ -6,7 +6,7 @@ def get_api_data():
     job_file = open('jobs.txt', 'w+')
     job_list = []
     page_number = 1
-
+    # add comment to test
     while page_number < 6:
         response = requests.get("https://jobs.github.com/positions.json?&page=" + str(page_number))
         print(response.status_code)
