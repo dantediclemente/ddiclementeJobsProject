@@ -1,7 +1,6 @@
 import production_code
 import os.path
 
-
 conn, cursor = production_code.open_db("jobs_db.sqlite")
 
 
@@ -19,6 +18,7 @@ def test_known_result_in_db():
     assert result.fetchone()[0] == "DevsData"
 
 
+# Extra Test, tests that ALL the data in the db is correct after each pull from the API.
 def test_all_data_in_db():
     result = cursor.execute('SELECT * FROM api_jobs')
     jobs = production_code.get_api_data()
@@ -43,35 +43,35 @@ def test_if_db_table_exists():
 
 def test_good_data_input():
     job_list = [{
-            "company": "test",
-            "company_logo": "test",
-            "company_url": "test",
-            "created_at": "test",
-            "description": "test",
-            "how_to_apply": "test",
-            "id": "test",
-            "location": "test",
-            "title": "test",
-            "type": "test",
-            "url": "test"
-        }]
+        "company": "test",
+        "company_logo": "test",
+        "company_url": "test",
+        "created_at": "test",
+        "description": "test",
+        "how_to_apply": "test",
+        "id": "test",
+        "location": "test",
+        "title": "test",
+        "type": "test",
+        "url": "test"
+    }]
     result = production_code.insert_data_into_db(cursor, job_list)
     assert result is None
-    cursor.execute("DELETE FROM api_jobs WHERE company = 'test'")
 
 
+# Missing company name which is not allowed.
 def test_bad_data_input():
     job_list = [{
-            "company_logo": 'test',
-            "company_url": "test",
-            "created_at": "test",
-            "description": "test",
-            "how_to_apply": "test",
-            "id": "test",
-            "location": "test",
-            "title": "test",
-            "type": "test",
-            "url": "test"
-        }]
+        "company_logo": 'test',
+        "company_url": "test",
+        "created_at": "test",
+        "description": "test",
+        "how_to_apply": "test",
+        "id": "test",
+        "location": "test",
+        "title": "test",
+        "type": "test",
+        "url": "test"
+    }]
     result = production_code.insert_data_into_db(cursor, job_list)
     assert result == "failed"

@@ -2,6 +2,7 @@ import sqlite3
 import requests
 import json
 from typing import Tuple
+import sys
 
 
 def get_api_data():
@@ -72,8 +73,9 @@ def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
                             job['description'], job['how_to_apply'],
                             job['location'], job['title'],
                             job['type'], job['url']))
-        except KeyError:
-            print("Failed to insert data into sqlite table")
+        except KeyError as error:
+            print("Failed to insert data into sqlite table", error)
+
             return "failed"
 
 
