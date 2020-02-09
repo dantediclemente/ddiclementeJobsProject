@@ -11,7 +11,6 @@ def get_api_data():
     while more_data:
         response = requests.get("https://jobs.github.com/positions.json?&page=" + str(page_number))
         if response.status_code == 200:
-            print('hit')
             page_number += 1
             jobs = response.json()
             for job in jobs:
