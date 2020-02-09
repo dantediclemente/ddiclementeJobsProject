@@ -1,6 +1,8 @@
 import production_code
 import os.path
 
+
+production_code.main()
 conn, cursor = production_code.open_db("jobs_db.sqlite")
 
 
