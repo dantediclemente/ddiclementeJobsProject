@@ -13,6 +13,11 @@ def test_first_job_listing_in_file():
     assert name_found_in_line
 
 
+def test_length_of_result():
+    result = production_code.get_api_data()
+    assert len(result) > 100
+
+
 def test_known_result_in_db():
     result = cursor.execute('SELECT company FROM api_jobs WHERE company = "DevsData"')
     assert result.fetchone()[0] == "DevsData"
