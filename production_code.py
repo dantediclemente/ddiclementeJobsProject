@@ -71,7 +71,7 @@ def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
                             job['description'], job['how_to_apply'],
                             job['location'], job['title'],
                             job['type'], job['url']))
-        except KeyError as error:
+        except (sqlite3.IntegrityError, KeyError) as error:
             print("Failed to insert data into sqlite table", error)
 
             return "failed"

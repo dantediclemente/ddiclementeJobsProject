@@ -66,9 +66,28 @@ def test_good_data_input():
     assert result is None
 
 
-# Missing company name which is not allowed.
+# Missing a key
 def test_bad_data_input():
     job_list = [{
+        "company_logo": 'test',
+        "company_url": "test",
+        "created_at": "test",
+        "description": "test",
+        "how_to_apply": "test",
+        "id": "test",
+        "location": "test",
+        "title": "test",
+        "type": "test",
+        "url": "test"
+    }]
+    result = production_code.insert_data_into_db(cursor, job_list)
+    assert result == "failed"
+
+
+# Missing company name which is not allowed.
+def test_bad_data_input_two():
+    job_list = [{
+        "company": None,
         "company_logo": 'test',
         "company_url": "test",
         "created_at": "test",
