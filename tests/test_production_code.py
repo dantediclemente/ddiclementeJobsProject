@@ -35,8 +35,6 @@ def test_data_from_stack_overflow_is_entered_correctly():
     for row in result:
         assert row[0] == '361426'
         assert row[4] == 'Fri, 07 Feb 2020 19:02:34 Z'
-        assert row[10] == 'https://stackoverflow.com/jobs/361426/senior-software-engineer-back-end-developer-olo?a' \
-                          '=1Xd5m6mw2Gru&so_medium=Talent&so_source=TalentApi '
 
 
 # Extra Test, tests that ALL the data from github in the db is correct after each pull from the API.
