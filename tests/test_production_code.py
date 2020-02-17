@@ -26,8 +26,8 @@ def test_known_result_in_db():
 
 # Test that data from stack overflow is in the database.
 def test_data_from_stack_overflow():
-    result = cursor.execute('SELECT company FROM api_jobs WHERE company = "Jelli"')
-    assert result.fetchone()[0] == "Jelli"
+    result = cursor.execute('SELECT company FROM api_jobs WHERE company = "Solutions for Information Design"')
+    assert result.fetchone()[0] == "Solutions for Information Design"
 
 
 def test_data_from_stack_overflow_is_entered_correctly():
