@@ -1,5 +1,4 @@
 import production_code
-import os.path
 
 
 production_code.main()
