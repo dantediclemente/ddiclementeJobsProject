@@ -6,13 +6,13 @@ production_code.main()
 conn, cursor = production_code.open_db("jobs_db.sqlite")
 
 
-def test_first_job_listing_in_file():
-    job_file = open(os.path.dirname(__file__) + '/../jobs.txt', 'r')
-    name_found_in_line = False
-    for line in job_file:
-        if 'F. Hoffmann-La Roche AG' in line:
-            name_found_in_line = True
-    assert name_found_in_line
+# def test_first_job_listing_in_file():
+#     job_file = open(os.path.dirname(__file__) + '/../jobs.txt', 'r')
+#     name_found_in_line = False
+#     for line in job_file:
+#         if 'F. Hoffmann-La Roche AG' in line:
+#             name_found_in_line = True
+#     assert name_found_in_line
 
 
 def test_length_of_result():
@@ -25,7 +25,21 @@ def test_known_result_in_db():
     assert result.fetchone()[0] == "DevsData"
 
 
-# Extra Test, tests that ALL the data in the db is correct after each pull from the API.
+# Test that data from stack overflow is in the database.
+def test_data_from_stack_overflow():
+    result = cursor.execute('SELECT company FROM api_jobs WHERE company = "Jelli"')
+    assert result.fetchone()[0] == "Jelli"
+
+
+def test_data_from_stack_overflow_is_entered_correctly():
+    result = cursor.execute('SELECT * FROM api_jobs WHERE job_id = "361426"')
+    for row in result:
+        assert row[0] == '361426'
+        assert row[4] == 'Fri, 07 Feb 2020 19:02:34 Z'
+        assert row[10] == 'https://stackoverflow.com/jobs/361426/senior-software-engineer-back-end-developer-olo?a=1Xd5m6mw2Gru&so_medium=Talent&so_source=TalentApi'
+
+
+# Extra Test, tests that ALL the data from github in the db is correct after each pull from the API.
 def test_all_data_in_db():
     result = cursor.execute('SELECT * FROM api_jobs')
     jobs = production_code.get_api_data()
@@ -66,7 +80,7 @@ def test_good_data_input():
     assert result is None
 
 
-# Missing a key
+# Missing a key. TESTS FOR BOTH API CALLS
 def test_bad_data_input():
     job_list = [{
         "company_logo": 'test',
@@ -84,7 +98,7 @@ def test_bad_data_input():
     assert result == "failed"
 
 
-# Missing company name which is not allowed.
+# Missing company name which is not allowed. TESTS FOR BOTH API CALLS
 def test_bad_data_input_two():
     job_list = [{
         "company": None,
