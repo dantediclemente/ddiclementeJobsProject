@@ -19,6 +19,11 @@ def test_length_of_result():
     assert len(result) > 100
 
 
+def test_length_of_result_from_stack_overflow():
+    result = production_code.data_from_stack_overflow("https://stackoverflow.com/jobs/feed")
+    assert len(result) == 1000
+
+
 def test_known_result_in_db():
     result = cursor.execute('SELECT company FROM api_jobs WHERE company = "DevsData"')
     assert result.fetchone()[0] == "DevsData"
