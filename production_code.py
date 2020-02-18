@@ -96,10 +96,6 @@ def data_from_stack_overflow(url: str):
             "url": str(each.link)
         }
         json_job_list.append(new_json_obj)
-        for job in json_job_list:
-            if job["id"] is None:
-                print("The data is corrupt")
-                return 'failed'
     return json_job_list
 
 
