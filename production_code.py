@@ -2,6 +2,7 @@ import sqlite3
 import requests
 import json
 from typing import Tuple
+import feedparser
 
 
 def get_api_data():
@@ -77,6 +78,27 @@ def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
             return "failed"
 
 
+def data_from_stack_overflow(url: str):
+    json_job_list = []
+    jobs = feedparser.parse(url)
+    for each in jobs.entries:
+        new_json_obj = {
+            "id": str(each.id),
+            "company": str(each.author),
+            "company_logo": None,
+            "company_url": None,
+            "created_at": str(each.published),
+            "description": str(each.summary),
+            "how_to_apply": None,
+            "location": str(each.location) if 'location' in each else None,
+            "title": str(each.title),
+            "type": None,
+            "url": str(each.link)
+        }
+        json_job_list.append(new_json_obj)
+    return json_job_list
+
+
 def main():
     write_to_file(get_api_data())
     conn, cursor = open_db("jobs_db.sqlite")
@@ -84,7 +106,9 @@ def main():
     drop_table_on_new_api_call(cursor)
     create_table(cursor)
     insert_data_into_db(cursor, get_api_data())
+    insert_data_into_db(cursor, data_from_stack_overflow("https://stackoverflow.com/jobs/feed"))
     close_db(conn)
+    # data_from_stack_overflow()
 
 
 if __name__ == '__main__':
