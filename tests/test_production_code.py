@@ -18,9 +18,8 @@ def test_length_of_result():
     result = production_code.get_api_data()
     assert len(result) > 100
 
-
 def test_length_of_result_from_stack_overflow():
-    result = production_code.data_from_stack_overflow("https://stackoverflow.com/jobs/feed")
+    result = production_code.data_from_stack_overflow()
     assert len(result) == 1000
 
 
@@ -31,8 +30,8 @@ def test_known_result_in_db():
 
 # Test that data from stack overflow is in the database.
 def test_data_from_stack_overflow():
-    result = cursor.execute('SELECT company FROM api_jobs WHERE company = "Solutions for Information Design"')
-    assert result.fetchone()[0] == "Solutions for Information Design"
+    result = cursor.execute('SELECT company FROM api_jobs WHERE company = "X-Team"')
+    assert result.fetchone()[0] == "X-Team"
 
 
 def test_data_from_stack_overflow_is_entered_correctly():

@@ -78,9 +78,9 @@ def insert_data_into_db(cursor: sqlite3.Cursor, job_list):
             return "failed"
 
 
-def data_from_stack_overflow(url: str):
+def data_from_stack_overflow():
     json_job_list = []
-    jobs = feedparser.parse(url)
+    jobs = feedparser.parse("https://stackoverflow.com/jobs/feed")
     for each in jobs.entries:
         new_json_obj = {
             "id": str(each.id),
@@ -106,7 +106,7 @@ def main():
     drop_table_on_new_api_call(cursor)
     create_table(cursor)
     insert_data_into_db(cursor, get_api_data())
-    insert_data_into_db(cursor, data_from_stack_overflow("https://stackoverflow.com/jobs/feed"))
+    insert_data_into_db(cursor, data_from_stack_overflow())
     close_db(conn)
     # data_from_stack_overflow()
 
