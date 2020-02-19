@@ -18,6 +18,7 @@ def test_length_of_result():
     result = production_code.get_api_data()
     assert len(result) > 100
 
+
 def test_length_of_result_from_stack_overflow():
     result = production_code.data_from_stack_overflow()
     assert len(result) == 1000
