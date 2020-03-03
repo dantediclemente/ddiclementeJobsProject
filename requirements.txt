@@ -1,3 +1,10 @@
 requests
 typing
 feedparser
+plotly
+geopy
+re
+dash
+datetime
+dateutil.parser
+bs4

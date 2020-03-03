@@ -1,7 +1,5 @@
 import production_code
 
-
-production_code.main()
 conn, cursor = production_code.open_db("jobs_db.sqlite")
 
 
@@ -118,3 +116,30 @@ def test_bad_data_input_two():
     }]
     result = production_code.insert_data_into_db(cursor, job_list)
     assert result == "failed"
+
+
+def test_data_for_tech_filter():
+    all_jobs = production_code.fetch_all_jobs_with_lat_long(cursor, production_code.fetch_all_jobs(cursor))
+    filtered_jobs = production_code.filter_jobs_by_desc("ruby", all_jobs)
+
+    assert len(filtered_jobs) > 0
+
+
+def test_data_for_company_filter():
+    all_jobs = production_code.fetch_all_jobs_with_lat_long(cursor, production_code.fetch_all_jobs(cursor))
+    filtered_jobs = production_code.filter_jobs_by_desc("siemens", all_jobs)
+
+    assert len(filtered_jobs) > 0
+
+
+def test_data_for_type_filter():
+    all_jobs = production_code.fetch_all_jobs_with_lat_long(cursor, production_code.fetch_all_jobs(cursor))
+    filtered_jobs = production_code.filter_jobs_by_desc("full time", all_jobs)
+
+    assert len(filtered_jobs) > 0
+
+
+def test_data_for_date_filter():
+    all_jobs = production_code.fetch_all_jobs_with_lat_long(cursor, production_code.fetch_all_jobs(cursor))
+    filtered_jobs = production_code.filter_jobs_by_desc("4", all_jobs)
+    assert len(filtered_jobs) > 0
