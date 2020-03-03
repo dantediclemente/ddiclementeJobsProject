@@ -291,7 +291,7 @@ def gui_setup(fig, list_of_job_objects):
                 searchable=False,
                 clearable=False,
                 style={
-                    'width':'200px'
+                    'width': '200px'
                 }
             )
         ]),
