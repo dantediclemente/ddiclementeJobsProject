@@ -113,7 +113,7 @@ def data_from_stack_overflow():
 
 def create_table_cache_for_job_locations(cursor: sqlite3.Cursor):
     cursor.execute('''CREATE TABLE IF NOT EXISTS api_jobs_location_cache(
-        location TEXT NOT NULL, 
+        location TEXT NOT NULL,
          lat TEXT NOT NULL,
          long TEXT NOT NULL
          );''')
