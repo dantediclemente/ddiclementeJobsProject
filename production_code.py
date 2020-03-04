@@ -344,18 +344,6 @@ def gui_setup(fig, list_of_job_objects):
         current_job = get_graph_point_detail_data(graph_data, list_of_job_objects)
         if current_job is not None:
             return html.Ul([html.Li(current_job[x]) for x in current_job])
-        # if graph_data is not None:
-        #     job_lat = graph_data['points'][0]['lat']
-        #     job_long = graph_data['points'][0]['lon']
-        #     job_title = graph_data['points'][0]['text'].split(",")[0]
-        #
-        #     for job in list_of_job_objects:
-        #         if job['company'] == job_title and job['lat'] == job_lat and job['long'] == job_long:
-        #             current_job = job
-        #             soup = BeautifulSoup(current_job['description'], features="html.parser")
-        #             current_job['description'] = soup.get_text(separator="\n")
-        #             return html.Ul([html.Li(current_job[x]) for x in current_job])
-
     return app
 
 
