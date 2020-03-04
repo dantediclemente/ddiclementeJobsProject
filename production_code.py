@@ -237,8 +237,8 @@ def parse_time_from_db(text):
 def filter_jobs_by_date(filtered_input, list_of_job_objects):
     filtered_job_objects = []
 
-    if filtered_input == "":
-        filtered_input = 1
+    if filtered_input == "" or filtered_input is None:
+        filtered_input = 0
         today = dt.now()
         weeks_ago = dt.date(today - datet.timedelta(days=int(filtered_input) * 7))
     else:
@@ -252,6 +252,21 @@ def filter_jobs_by_date(filtered_input, list_of_job_objects):
             filtered_job_objects.append(job)
 
     return filtered_job_objects
+
+
+def get_graph_point_detail_data(graph_data, list_of_job_objects):
+    print(graph_data)
+    if graph_data is not None:
+        job_lat = graph_data['points'][0]['lat']
+        job_long = graph_data['points'][0]['lon']
+        job_title = graph_data['points'][0]['text'].split(",")[0]
+
+        for job in list_of_job_objects:
+            if job['company'] == job_title and job['lat'] == job_lat and job['long'] == job_long:
+                current_job = job
+                soup = BeautifulSoup(current_job['description'], features="html.parser")
+                current_job['description'] = soup.get_text(separator="\n")
+                return current_job
 
 
 def gui_setup(fig, list_of_job_objects):
@@ -270,15 +285,18 @@ def gui_setup(fig, list_of_job_objects):
             id='job-graph',
             figure=fig,
             style={
-                'height': '75vh',
-                'zoom': 0
+                'height': '85vh'
             }
         ),
 
         html.Div([
+            html.Label("Enter technologies separated by commas"),
             dcc.Input(id='technologies', placeholder='Enter three technologies', value="", type='text'),
+            html.Label("Enter Company name"),
             dcc.Input(id='company', placeholder='Enter company name', value="", type='text'),
-            dcc.Input(id='date-time', placeholder='weeks ago', value=1, type='number', min=0, max=52, step=4),
+            html.Label("Search by weeks old"),
+            dcc.Input(id='date-time', placeholder='weeks ago', value=52, type='number', min=1, max=52, step=1),
+            html.Label("Job Type"),
             dcc.Dropdown(
                 id='job-type',
                 options=[
@@ -323,18 +341,20 @@ def gui_setup(fig, list_of_job_objects):
         [Input(component_id='job-graph', component_property='clickData')]
     )
     def show_data(graph_data):
-        if graph_data is not None:
-            job_lat = graph_data['points'][0]['lat']
-            job_long = graph_data['points'][0]['lon']
-            job_title = graph_data['points'][0]['text'].split(",")[0]
-
-            for job in list_of_job_objects:
-                if job['company'] == job_title and job['lat'] == job_lat and job['long'] == job_long:
-                    current_job = job
-                    soup = BeautifulSoup(current_job['description'])
-                    current_job['description'] = soup.get_text(separator="\n")
-                    print(soup.get_text(separator="\n"))
-                    return html.Ul([html.Li(current_job[x]) for x in current_job])
+        current_job = get_graph_point_detail_data(graph_data, list_of_job_objects)
+        if current_job is not None:
+            return html.Ul([html.Li(current_job[x]) for x in current_job])
+        # if graph_data is not None:
+        #     job_lat = graph_data['points'][0]['lat']
+        #     job_long = graph_data['points'][0]['lon']
+        #     job_title = graph_data['points'][0]['text'].split(",")[0]
+        #
+        #     for job in list_of_job_objects:
+        #         if job['company'] == job_title and job['lat'] == job_lat and job['long'] == job_long:
+        #             current_job = job
+        #             soup = BeautifulSoup(current_job['description'], features="html.parser")
+        #             current_job['description'] = soup.get_text(separator="\n")
+        #             return html.Ul([html.Li(current_job[x]) for x in current_job])
 
     return app
 
@@ -366,14 +386,7 @@ def map_for_jobs(list_of_job_objects):
     fig.update_layout(
         hovermode='closest',
         mapbox=dict(
-            accesstoken=mbx_access_token,
-            bearing=0,
-            center=go.layout.mapbox.Center(
-                lat=0,
-                lon=0
-            ),
-            pitch=0,
-            zoom=0
+            accesstoken=mbx_access_token
         )
     )
 
