@@ -3,6 +3,18 @@ import requests
 import json
 from typing import Tuple
 import feedparser
+from geopy.geocoders import Nominatim
+from geopy.extra.rate_limiter import RateLimiter
+import re
+import plotly.graph_objects as go
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
+from datetime import datetime as dt
+import datetime as datet
+import dateutil.parser
+from bs4 import BeautifulSoup
 
 
 def get_api_data():
@@ -99,6 +111,276 @@ def data_from_stack_overflow():
     return json_job_list
 
 
+def create_table_cache_for_job_locations(cursor: sqlite3.Cursor):
+    cursor.execute('''CREATE TABLE IF NOT EXISTS api_jobs_location_cache(
+        location TEXT NOT NULL,
+         lat TEXT NOT NULL,
+         long TEXT NOT NULL
+         );''')
+
+
+def grab_all_jobs_for_lat_long(cursor: sqlite3.Cursor):
+    locations = cursor.execute("SELECT location FROM api_jobs WHERE location IS NOT NULL")
+    list_of_cities_for_geo = []
+    for location in locations:
+        split_location = re.split(r', |; |-| \| |/|&| or ', location[0])
+        final_location = split_location[0].lower()
+
+        if final_location.split()[0] != 'remote':
+            if final_location not in list_of_cities_for_geo:
+                list_of_cities_for_geo.append(final_location)
+
+    return list_of_cities_for_geo
+
+
+def convert_city(location):
+    split_location = re.split(r', |; |-| \| |/|&| or ', location)
+    final_location = split_location[0].lower()
+
+    return final_location
+
+
+def geo_lat_and_long_for_location(cursor: sqlite3.Cursor, list_of_cities):
+    geolocator = Nominatim(user_agent="https://nominatim.openstreetmap.org/search?")
+    limiter = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+
+    for location in list_of_cities:
+        location_in_cache = cursor.execute(f'''SELECT location FROM api_jobs_location_cache WHERE location = ?''',
+                                           (location,))
+
+        if len(location_in_cache.fetchall()) == 0:
+            geo_location = limiter(location)
+            if geo_location is not None:
+                print(geo_location.latitude, geo_location.longitude)
+                cursor.execute(f'''INSERT INTO api_jobs_location_cache (location, lat, long) VALUES (?, ?, ?)''',
+                               (location,
+                                geo_location.latitude,
+                                geo_location.longitude))
+
+
+def fetch_all_jobs(cursor: sqlite3.Cursor):
+    jobs_list = []
+    actual_jobs = cursor.execute("SELECT * FROM api_jobs")
+
+    for job in actual_jobs:
+        new_job_object = {
+            "job_id": job[0],
+            "company": job[1],
+            "company_logo": job[2],
+            "company_url": job[3],
+            "created_at": job[4],
+            "description": job[5],
+            "how_to_apply": job[6],
+            "location": job[7] if job[7] in job else None,
+            "title": job[8],
+            "type": job[9],
+            "url": job[10],
+            "lat": None,
+            "long": None
+        }
+        jobs_list.append(new_job_object)
+
+    return jobs_list
+
+
+def fetch_all_jobs_with_lat_long(cursor: sqlite3.Cursor, actual_jobs):
+    jobs_list_with_updated_location = []
+
+    for job in actual_jobs:
+        if job['location'] is not None:
+            converted_city = convert_city(job['location'])
+            if converted_city.split()[0] != 'remote':
+                cache_city = cursor.execute("SELECT * FROM api_jobs_location_cache WHERE location = ?",
+                                            (converted_city,))
+                lat_and_long = cache_city.fetchone()
+                if lat_and_long is not None:
+                    lat_from_cache = lat_and_long[1]
+                    long_from_cache = lat_and_long[2]
+                else:
+                    lat_from_cache = None
+                    long_from_cache = None
+
+        job['lat'] = lat_from_cache
+        job['long'] = long_from_cache
+
+        jobs_list_with_updated_location.append(job)
+
+    return jobs_list_with_updated_location
+
+
+def filter_jobs_by_desc(filtered_input, list_of_job_objects):
+    filtered_job_objects = []
+
+    formatted_filtered_input = filtered_input.lower().strip().split(',')
+
+    if formatted_filtered_input[0] == '':
+        return list_of_job_objects
+    else:
+        for job in list_of_job_objects:
+            if job not in filtered_job_objects:
+                job_desc = job['description'].lower()
+                for technology in formatted_filtered_input:
+                    if technology in job_desc:
+                        filtered_job_objects.append(job)
+
+    return filtered_job_objects
+
+
+def parse_time_from_db(text):
+    for _ in ('%Y-%m-%d', '%d.%m.%Y', '%d/%m/%Y'):
+        try:
+            return dt.date(dateutil.parser.parse(text))
+        except ValueError:
+            pass
+
+
+def filter_jobs_by_date(filtered_input, list_of_job_objects):
+    filtered_job_objects = []
+
+    if filtered_input == "" or filtered_input is None:
+        filtered_input = 0
+        today = dt.now()
+        weeks_ago = dt.date(today - datet.timedelta(days=int(filtered_input) * 7))
+    else:
+        today = dt.now()
+        weeks_ago = dt.date(today - datet.timedelta(days=int(filtered_input) * 7))
+
+    for job in list_of_job_objects:
+        parsed_time = parse_time_from_db(job["created_at"])
+
+        if weeks_ago < parsed_time:
+            filtered_job_objects.append(job)
+
+    return filtered_job_objects
+
+
+def get_graph_point_detail_data(graph_data, list_of_job_objects):
+    print(graph_data)
+    if graph_data is not None:
+        job_lat = graph_data['points'][0]['lat']
+        job_long = graph_data['points'][0]['lon']
+        job_title = graph_data['points'][0]['text'].split(",")[0]
+
+        for job in list_of_job_objects:
+            if job['company'] == job_title and job['lat'] == job_lat and job['long'] == job_long:
+                current_job = job
+                soup = BeautifulSoup(current_job['description'], features="html.parser")
+                current_job['description'] = soup.get_text(separator="\n")
+                return current_job
+
+
+def gui_setup(fig, list_of_job_objects):
+    external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+    app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+
+    app.layout = html.Div(children=[
+        html.H1(children='API Jobs'),
+
+        html.Div(children='''
+            Jobs from the StackOverflow and Github job boards.
+        '''),
+
+        dcc.Graph(
+            id='job-graph',
+            figure=fig,
+            style={
+                'height': '85vh'
+            }
+        ),
+
+        html.Div([
+            html.Label("Enter technologies separated by commas"),
+            dcc.Input(id='technologies', placeholder='Enter three technologies', value="", type='text'),
+            html.Label("Enter Company name"),
+            dcc.Input(id='company', placeholder='Enter company name', value="", type='text'),
+            html.Label("Search by weeks old"),
+            dcc.Input(id='date-time', placeholder='weeks ago', value=52, type='number', min=1, max=52, step=1),
+            html.Label("Job Type"),
+            dcc.Dropdown(
+                id='job-type',
+                options=[
+                    {'label': 'All', 'value': ''},
+                    {'label': 'Full-Time', 'value': 'full time'},
+                    {'label': 'Part-Time', 'value': 'part time'},
+                    {'label': 'Remote', 'value': 'remote'},
+                ],
+                value="Any",
+                searchable=False,
+                clearable=False,
+                style={
+                    'width': '200px'
+                }
+            )
+        ]),
+
+        html.Div([
+            html.Pre(id='individual-data'),
+        ])
+    ])
+
+    @app.callback(
+        Output(component_id='job-graph', component_property='figure'),
+        [Input(component_id='technologies', component_property='value'),
+         Input(component_id='company', component_property='value'),
+         Input(component_id='date-time', component_property='value'),
+         Input(component_id='job-type', component_property='value')]
+    )
+    def update_output_div(technologies, company, date_time, job_type):
+        tech_filter = filter_jobs_by_desc(technologies, list_of_job_objects)
+        company_filter = filter_jobs_by_desc(company, tech_filter)
+        date_filter = filter_jobs_by_date(date_time, company_filter)
+        job_type = filter_jobs_by_desc(job_type, date_filter)
+
+        new_fig = map_for_jobs(job_type)
+
+        return new_fig
+
+    @app.callback(
+        Output(component_id='individual-data', component_property='children'),
+        [Input(component_id='job-graph', component_property='clickData')]
+    )
+    def show_data(graph_data):
+        current_job = get_graph_point_detail_data(graph_data, list_of_job_objects)
+        if current_job is not None:
+            return html.Ul([html.Li(current_job[x]) for x in current_job])
+    return app
+
+
+def map_for_jobs(list_of_job_objects):
+    mbx_access_token = "pk.eyJ1IjoiZGFudGVkaWNsZW1lbnRlIiwiYSI6ImNrNzB6dHE1cjAxeGczZ25zcWo1YW9mZWoifQ" \
+                       ".AJDlCC171CRF1xDT9rEd0A "
+
+    lat = []
+    long = []
+    company_name = []
+    for job in list_of_job_objects:
+        if job['lat'] is not None and job['long'] is not None:
+            lat.append(job['lat'])
+            long.append(job['long'])
+            name_and_title = job['company'] + ", " + job['title']
+            company_name.append(name_and_title)
+
+    fig = go.Figure(go.Scattermapbox(
+        lat=lat,
+        lon=long,
+        mode='markers',
+        marker=go.scattermapbox.Marker(
+            size=14
+        ),
+        text=company_name,
+    ))
+
+    fig.update_layout(
+        hovermode='closest',
+        mapbox=dict(
+            accesstoken=mbx_access_token
+        )
+    )
+
+    return fig
+
+
 def main():
     write_to_file(get_api_data())
     conn, cursor = open_db("jobs_db.sqlite")
@@ -107,8 +389,13 @@ def main():
     create_table(cursor)
     insert_data_into_db(cursor, get_api_data())
     insert_data_into_db(cursor, data_from_stack_overflow())
+    create_table_cache_for_job_locations(cursor)
+    all_jobs = grab_all_jobs_for_lat_long(cursor)
+    geo_lat_and_long_for_location(cursor, all_jobs)
+    all_jobs = fetch_all_jobs_with_lat_long(cursor, fetch_all_jobs(cursor))
+    map_figure = map_for_jobs(all_jobs)
     close_db(conn)
-    # data_from_stack_overflow()
+    gui_setup(map_figure, all_jobs).run_server()
 
 
 if __name__ == '__main__':
